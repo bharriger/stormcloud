@@ -1,0 +1,52 @@
+version: '3.4'
+
+services:
+    zookeeper:
+        image: zookeeper
+        restart: always
+
+    nimbus:
+        image: storm
+        #command: storm nimbus -c storm.log.dir="/logs" -c storm.zookeeper.servers="[\"zookeeper\"]" -c nimbus.host=`docker inspect --format='{{.NetworkSettings.IPAddress}}' 
+        command: storm nimbus -c storm.log.dir="/logs" -c storm.zookeeper.servers="[\"zookeeper\"]" -c nimbus.host=localhost
+        depends_on:
+            - zookeeper
+        restart: always
+        ports:
+            - 6627:6627
+        volumes:
+            - logs:/Users/bharriger/Magic/storm/logs
+
+    supervisor:
+        image: storm
+        #command: storm supervisor -c storm.log.dir="/logs" -c storm.zookeeper.servers="[\"zookeeper\"]" -c nimbus.host="nimbus"
+        command: storm supervisor -c storm.log.dir="/logs" -c storm.local.hostname="localhost" -c storm.zookeeper.servers="[\"zookeeper\"]" -c nimbus.host="nimbus"
+        depends_on:
+            - nimbus
+        restart: always
+        volumes:
+            - logs:/Users/bharriger/Magic/storm/logs
+
+    logviewer:
+        image: storm
+        command: storm logviewer -c storm.log.dir="/logs"
+        restart: always
+        ports:
+            - 8000:8000
+        volumes:
+            - logs:/Users/bharriger/Magic/storm/logs
+
+    ui:
+        image: storm
+        command: storm ui -c storm.log.dir="/logs" -c nimbus.host="nimbus"
+        depends_on:
+            - nimbus
+            - logviewer
+        restart: always
+        ports:
+            - 8080:8080
+        volumes:
+            - logs:/Users/bharriger/Magic/storm/logs
+
+volumes:
+    logs: {}
